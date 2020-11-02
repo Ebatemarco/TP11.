@@ -19,18 +19,14 @@
 #include <allegro5/allegro_primitives.h>
 #include "emuladordepuertos.h"
 
-void must_init(bool test, const char *description)
-{
-    if(test) return;
-
-    printf("couldn't initialize %s\n", description);
-    exit(1);
-}
+void display (char bit, int val1, int val2);
 
 int switchcase (char bit, char puerto);
 //cambia el estado del bit al opuesto
 
-int main()
+void must_init(bool test, const char *description);
+
+int main(void)
 {
     //VARIABLES
     int bitactual;
@@ -40,7 +36,10 @@ int main()
     bool bit_parpadeo[8]={false,false,false,false,false,false,false,false};
     bool estado_parpadeo=false;
     
-    //
+    bool done = false;
+    bool redraw = true;
+    
+    //INICIALIZACION
     
     must_init(al_init(), "allegro");
     must_init(al_install_keyboard(), "keyboard");
@@ -56,10 +55,6 @@ int main()
 
     ALLEGRO_FONT* font = al_create_builtin_font();
     must_init(font, "font");
-
-    /*must_init(al_init_image_addon(), "image addon");
-    ALLEGRO_BITMAP* Bitmap = al_load_bitmap("EstadoBase.jpg");
-    must_init(Bitmap, "Bitmap");*/
     
     must_init(al_init_primitives_addon(), "primitives");
 
@@ -67,11 +62,11 @@ int main()
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
-    bool done = false;
-    bool redraw = true;
+    
     ALLEGRO_EVENT event;
     ALLEGRO_KEYBOARD_STATE ks;
 
+    //Inicializamos el display con los leds apagados(blanco)
     x1=12;
     x2=30;
     for(bitactual=7; bitactual>=0;bitactual--)
@@ -82,11 +77,11 @@ int main()
     } 
     al_flip_display();
     
-                    
+    //MAIN LOOP
     al_start_timer(timer);
     while(!done)
     {
-        al_wait_for_event(queue, &event);
+        al_wait_for_event(queue, &event);//Esperamos a un evento
 
         switch(event.type)
         {
@@ -96,19 +91,19 @@ int main()
                 redraw = true;
                 break;*/
             case ALLEGRO_EVENT_KEY_DOWN:
-                if(event.keyboard.keycode == ALLEGRO_KEY_T)
+                if(event.keyboard.keycode == ALLEGRO_KEY_T)//Si se preciono 't'
                 {
                     x1=12;
                     x2=30;
                     
-                    for(bitactual=7; bitactual>=0;bitactual--)
+                    for(bitactual=7; bitactual>=0;bitactual--)//Vemos cada bit
                     {
-                        switch(bitGet(PORTA, bitactual))
+                        switch(bitGet(PORTA, bitactual))//En base a el estado del bit
                         {        
-                            case 0: 
+                            case 0: //Si esta apagado lo encendemos
                                 al_draw_filled_rectangle(x1, 55, x2, 40, al_map_rgba_f(1, 0, 0, 1));
                                 break;
-                            case 1:
+                            case 1://Si esta encendido lo apagamos
                                 al_draw_filled_rectangle(x1, 55, x2, 40, al_map_rgba_f(1, 1, 1, 1));
                                 break;
                             default: break;        
@@ -117,43 +112,43 @@ int main()
                         x2+=31;
                     } 
                     al_flip_display();
-                    maskToggle(PORTA, 0xFF);
+                    maskToggle(PORTA, 0xFF);//Aplicamos la mascara sobre la estructura
                     led_state (PORTA);
                     
                 } 
-                if(event.keyboard.keycode == ALLEGRO_KEY_B)
+                if(event.keyboard.keycode == ALLEGRO_KEY_B)//Si se preciono 'b'
                 {
-                    if(estado_parpadeo==true)
+                    if(estado_parpadeo==true)//Vemos si el flag de parpadeo esta activo
                     {
                         printf("Estado Parpadeo FALSE\n");
-                        estado_parpadeo=false;
-                        for(bitactual=0;bitactual<=7;bitactual++)
+                        estado_parpadeo=false;//Si ya estaba activo lo apagamos
+                        for(bitactual=0;bitactual<=7;bitactual++)//Desactivamos los flags que determinan quienes parpadean
                         {
                             bit_parpadeo[bitactual]=false;    
                         }
                            
                     }
-                    else
+                    else//Entonces esta apagado
                     {
-                        estado_parpadeo=true;
+                        estado_parpadeo=true;//Lo encendemos
                         printf("Estado Parpadeo TRUE\n");
-                        for(bitactual=0;bitactual<=7;bitactual++)
+                        for(bitactual=0;bitactual<=7;bitactual++)//Vemos que bits estan encendidos al momento de precionar 'b'
                         {
-                            if(bitGet(PORTA,bitactual)==true)
+                            if(bitGet(PORTA,bitactual)==true)//Aquellos que esten encendidos
                             {
-                                bit_parpadeo[bitactual]=true;
+                                bit_parpadeo[bitactual]=true;//Ponemos el flag para que titilen
                             }    
                         }
                     }
                     
                 } 
-                if(event.keyboard.keycode == ALLEGRO_KEY_C)
+                if(event.keyboard.keycode == ALLEGRO_KEY_C)//Si se preciono la 'c'
                 {
-                    maskOff (PORTA, 0xFF);
+                    maskOff (PORTA, 0xFF);//Aplicamos la mascara que apaga todos
                     led_state (PORTA);
                     x1=12;
                     x2=30;
-                    for(bitactual=7; bitactual>=0;bitactual--)
+                    for(bitactual=7; bitactual>=0;bitactual--)//Apagamos todo
                     {
                         al_draw_filled_rectangle(x1, 55, x2, 40, al_map_rgba_f(1, 1, 1, 1));
                         x1+=31;
@@ -161,13 +156,13 @@ int main()
                     } 
                     al_flip_display();
                 } 
-                if(event.keyboard.keycode == ALLEGRO_KEY_S)
+                if(event.keyboard.keycode == ALLEGRO_KEY_S)//Si se preciona 's'
                 {
-                    maskOn (PORTA, 0xFF);
+                    maskOn (PORTA, 0xFF);//Aplicamos la mascara para que todo se encienda
                     led_state (PORTA);
                     x1=12;
                     x2=30;
-                    for(bitactual=7; bitactual>=0;bitactual--)
+                    for(bitactual=7; bitactual>=0;bitactual--)//Encendemos todo
                     {
                         al_draw_filled_rectangle(x1, 55, x2, 40, al_map_rgba_f(1, 0, 0, 1));
                         x1+=31;
@@ -176,17 +171,19 @@ int main()
                     al_flip_display();
                     
                 } 
+                
+                //Vemos que numero se preciono
                 if(event.keyboard.keycode == ALLEGRO_KEY_0)
                 {
-                    switchcase (0, PORTA);
-                    led_state (PORTA);
-                    if(bitGet(PORTA, 0)==1)
+                    switchcase (0, PORTA);//Cambiamos el estado del bit
+                    
+                    if(bitGet(PORTA, 0)==1)//Si esta encendido lo encendemos 
                     {
                         led_state (PORTA);
                         al_draw_filled_rectangle(229, 55, 247, 40, al_map_rgba_f(1, 0, 0, 1));
                         al_flip_display();
                     }
-                    else if(bitGet(PORTA, 0)==0)
+                    else if(bitGet(PORTA, 0)==0)//Si esta apagado lo apagamos
                     {
                         led_state (PORTA);
                         al_draw_filled_rectangle(229, 55, 247, 40, al_map_rgba_f(1, 1, 1, 1));
@@ -200,7 +197,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_1)
                 {
                     switchcase (1, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 1)==1)
                     {
                         led_state (PORTA);
@@ -221,7 +218,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_2)
                 {
                     switchcase (2, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 2)==1)
                     {
                         led_state (PORTA);
@@ -242,7 +239,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_3)
                 {
                     switchcase (3, PORTA);
-                    led_state (PORTA);
+                    
                     
                     if(bitGet(PORTA, 3)==1)
                     {
@@ -264,7 +261,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_4)    
                 {
                     switchcase (4, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 4)==1)
                     {
                         led_state (PORTA);
@@ -285,7 +282,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_5)
                 {
                     switchcase (5, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 5)==1)
                     {
                         led_state (PORTA);
@@ -306,7 +303,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_6)
                 {
                     switchcase (6, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 6)==1)
                     {
                         led_state (PORTA);
@@ -327,7 +324,7 @@ int main()
                 if(event.keyboard.keycode == ALLEGRO_KEY_7)    
                 {
                     switchcase (7, PORTA);
-                    led_state (PORTA);
+                    
                     if(bitGet(PORTA, 7)==1)
                     {
                         led_state (PORTA);
@@ -344,11 +341,11 @@ int main()
                     {
                         led_state (PORTA);
                     }
-                }       
+                }       //Si se preciono 'q' cerramos
                 if(event.keyboard.keycode == ALLEGRO_KEY_Q)    
                 {
                     done=true;
-                }  
+                }      //Si se preciono la trecla de 'esc' cerramos
                 if(event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
                 {
                     done=true;
@@ -359,6 +356,7 @@ int main()
                 done = true;
                 break;    
                 
+        
         }
         if(redraw && al_is_event_queue_empty(queue))
         {
@@ -400,6 +398,7 @@ int main()
 
     }
 
+    //Liberamos todo
     
     al_destroy_font(font);
     al_destroy_display(disp);
@@ -416,3 +415,12 @@ int switchcase (char bit , char puerto)
      else 
         bitSet (puerto, bit); //lo prendo
 }
+
+void must_init(bool test, const char *description)
+{
+    if(test) return;
+
+    printf("couldn't initialize %s\n", description);
+    exit(1);
+}
+
